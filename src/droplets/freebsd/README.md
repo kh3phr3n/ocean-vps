@@ -3,12 +3,10 @@ Minimal script for setup FreeBSD on DigitalOcean
 
 ```bash
 # Update the entire system
-sudo freebsd-update fetch install
-sudo pkg update && sudo pkg upgrade
+sudo sh -c 'freebsd-update fetch install && pkg update && pkg upgrade'
 
-# Update shell: Bourne Shell to Bash
-sudo pkg install bash bash-completion
-sudo chsh -s /usr/local/bin/bash freebsd
+# Update shell to Bash
+sudo sh -c 'pkg install bash bash-completion && chsh -s /usr/local/bin/bash freebsd'
 
 # Reboot system
 sudo shutdown -r now
@@ -16,8 +14,9 @@ sudo shutdown -r now
 
 #### Minimal system setup
 
-```
-sudo ./setup.sh
+```bash
+wget https://raw.githubusercontent.com/kh3phr3n/ocean-vps/master/src/droplets/freebsd/setup.sh
+sudo sh -c 'chmod +x setup.sh && ./setup.sh'
 ```
 
 #### Good information

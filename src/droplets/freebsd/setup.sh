@@ -18,7 +18,7 @@ USERNAME="freebsd"
 USERHOME="/usr/home/${USERNAME}"
 # User dotfiles
 DOTFILES=('.vimrc' '.bashrc' '.bash_logout' '.bash_profile' '.bash_aliases')
-MYGITHUB="https://raw.githubusercontent.com/kh3phr3n/freebsd-ocean/master/src/dotfiles"
+MYGITHUB="https://raw.githubusercontent.com/kh3phr3n/ocean-vps/master/src/dotfiles"
 
 # Display a log file in a dialog box
 # $1: file
