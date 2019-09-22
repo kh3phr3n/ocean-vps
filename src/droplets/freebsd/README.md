@@ -16,6 +16,8 @@ sudo shutdown -r now
 
 ```bash
 wget https://raw.githubusercontent.com/kh3phr3n/ocean-vps/master/src/droplets/freebsd/setup.sh
+
+# Don't forget to add passwords
 sudo sh -c 'chmod +x setup.sh && ./setup.sh'
 ```
 
