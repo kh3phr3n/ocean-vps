@@ -143,13 +143,16 @@ set_sshd()
     dialog \
         --backtitle "${BACKTITLE}" \
         --title     "Confirmation [?]" \
-        --yesno     "\nDo you want to disable root login (SSHD)?" 8 60
+        --yesno     "\nDo you want to update remote authorizations (SSHD)?" 8 60
 
     # 0 means user hit [yes] button
     if [ "$?" -eq 0 ]
     then
         sed -i '' '/^PermitRootLogin/s/without-password/no/' /etc/ssh/sshd_config
         [[ "$?" -eq 0 ]] && echo "sshd_config: root login disabled" &>> ${LOGFILE}
+
+        echo "AllowUsers ${USERNAME}" >> /etc/ssh/sshd_config
+        [[ "$?" -eq 0 ]] && echo "sshd_config: ${USERNAME} login enabled" &>> ${LOGFILE}
     fi
 }
 
