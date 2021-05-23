@@ -8,7 +8,7 @@ shopt -s dotglob
 [[ -f ~/.bash_aliases ]] && source ~/.bash_aliases
 
 # Bash completion
-[[ -f /usr/local/share/bash-completion/bash_completion.sh ]] && source /usr/local/share/bash-completion/bash_completion.sh
+[[ -f /usr/share/bash-completion/bash_completion ]] && source /usr/share/bash-completion/bash_completion
 
 # Colored man pages
 man ()
