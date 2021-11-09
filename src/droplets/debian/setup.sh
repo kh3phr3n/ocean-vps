@@ -13,6 +13,7 @@ ROOTPASS=""
 USERPASS=""
 USERNAME=""
 USERHOME="/home/${USERNAME}"
+USERGROUPS="sudo,systemd-journal"
 
 # Utility functions
 # -----------------
@@ -138,7 +139,16 @@ set_user()
     # 0 means user hit [yes] button
     if [ "$?" -eq 0 ]
     then
-        # adduser ${USERNAME}
+        whiptail \
+            --backtitle "${BACKTITLE}" \
+            --title     "Question [?]" \
+            --inputbox  "\nEnter user groups separated by commas" 8 60 ${USERGROUPS} \
+            2>${OUTPUT}
+
+        if [ "$?" -eq 0 ]
+        then
+            adduser ${USERNAME} && usermod -aG $(<$OUTPUT) ${USERNAME}
+        fi
     fi
 }
 
