@@ -147,7 +147,10 @@ set_user()
 
         if [ "$?" -eq 0 ]
         then
-            adduser ${USERNAME} && usermod -aG $(<$OUTPUT) ${USERNAME}
+            # Create user/groups and define password
+            useradd -m -s /bin/bash ${USERNAME}
+            usermod -aG $(<$OUTPUT) ${USERNAME}
+            password ${USERNAME} ${USERPASS} &>> ${LOGFILE}
         fi
     fi
 }
