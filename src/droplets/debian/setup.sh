@@ -14,6 +14,16 @@ USERPASS=""
 USERNAME=""
 USERHOME="/home/${USERNAME}"
 
+# Utility functions
+# -----------------
+
+# Update user's password
+# $1: username
+# $2: password
+password () {
+    printf "$1:$2" | chpasswd --crypt-method=SHA512 --sha-rounds=5000 && echo ":: ${1}'s password updated successfully"
+}
+
 # Installer functions
 # -------------------
 
@@ -30,12 +40,12 @@ show_log()
 # Don't forget environment variables!
 check_env()
 {
-    if [ -z "${ROOTPASS}" ] || [ -z "${USERPASS}" ] || [ -z "${USERNAME}" ]
+    if [ -z "${ROOTPASS}" ] || [ -z "${USERPASS}" ] || [ -z "${USERNAME}" ] || [ $(pwd) != "/root" ]
     then
         whiptail \
             --backtitle "${BACKTITLE}" \
             --title     "Warning [!]" \
-            --msgbox    "\nDon't forget to specify environment variables." 8 60
+            --msgbox    "\nDon't forget to set env variables and run this script from /root directory." 8 85
 
         # Quit installer
         exit 0
@@ -102,6 +112,36 @@ sys_packages()
     fi
 }
 
+# Update root password to SHA512
+set_root()
+{
+    whiptail \
+        --backtitle "${BACKTITLE}" \
+        --title     "Confirmation [?]" \
+        --yesno     "\nDo you want to upgrade root's password?" 8 60
+
+    # 0 means user hit [yes] button
+    if [ "$?" -eq 0 ]
+    then
+        password root ${ROOTPASS} &>> ${LOGFILE}
+    fi
+}
+
+# Update root password to SHA512
+set_user()
+{
+    whiptail \
+        --backtitle "${BACKTITLE}" \
+        --title     "Confirmation [?]" \
+        --yesno     "\nDo you want to create a new  user (${USERNAME})?" 8 60
+
+    # 0 means user hit [yes] button
+    if [ "$?" -eq 0 ]
+    then
+        # adduser ${USERNAME}
+    fi
+}
+
 # Program entry-point
 # -------------------
 
@@ -118,12 +158,17 @@ main()
     sys_packages
 
     # Set basic configuration
+    set_root
+    set_user
 
     # Display logs
     show_log ${LOGFILE}
 
     # Clean temporary files
     rm ${LOGFILE} ${OUTPUT}
+
+    # File auto-destruction
+    shred --zero --verbose --iterations=10 --remove=wipesync ${0}
 }
 
 # We start here!
