@@ -293,10 +293,10 @@ set_wall()
 
             for port in $(<$OUTPUT)
             do
+                # Create new UFW rule
+                ufw allow $port && echo ":: port $port opened successfully." &>> ${LOGFILE}
                 # Restrict usage on port 22
                 [ "$port" == "22" ] && ufw limit $port
-                # Create a new UFW rule
-                ufw allow $port && echo ":: port $port opened successfully." &>> ${LOGFILE}
             done
 
             # We can now enable UFW!
