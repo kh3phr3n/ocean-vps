@@ -3,17 +3,19 @@
 # Environment variables
 # ---------------------
 
+# Root settings
+ROOTPASS=""
+
+# User settings
+USERNAME=""
+USERPASS=""
+USERHOME="/home/${USERNAME}"
+USERGROUPS="sudo,systemd-journal"
+
 # Dialog settings
 OUTPUT=$(mktemp)
 LOGFILE=$(mktemp)
 BACKTITLE="Tekin Server Installer"
-
-# User settings
-ROOTPASS=""
-USERPASS=""
-USERNAME=""
-USERHOME="/home/${USERNAME}"
-USERGROUPS="sudo,systemd-journal"
 
 # User dotfiles
 MYGITHUB="https://raw.githubusercontent.com/kh3phr3n/ocean-vps/master/src/dotfiles"
@@ -47,6 +49,22 @@ pause () {
 # $2: password
 password () {
     printf "$1:$2" | chpasswd --crypt-method=SHA512 --sha-rounds=5000 && echo ":: ${1}'s password updated successfully"
+}
+
+# File editing functions
+# ----------------------
+
+edit_sshd_config ()
+{
+cat << EOF >> /etc/ssh/sshd_config
+
+# Custom settings
+# ---------------
+
+X11Forwarding no
+PermitRootLogin no
+PasswordAuthentication no
+EOF
 }
 
 # Installer functions
@@ -202,6 +220,34 @@ set_user()
     fi
 }
 
+# Configure user's key and SSHD server
+set_sshd()
+{
+    whiptail \
+        --backtitle "${BACKTITLE}" \
+        --title     "Confirmation [?]" \
+        --yesno     "\nDo you want to configure SSH connection?" 8 60
+
+    # 0 means user hit [yes] button
+    if [ "$?" -eq 0 ]
+    then
+        # Copy SSH authorized key for ${USERNAME}
+        mv .ssh ${USERHOME} && chown -R ${USERNAME}:${USERNAME} ${USERHOME}/.ssh
+        [[ "$?" -eq 0 ]] && echo ":: ${USERNAME}'s ssh configured successfully." &>> ${LOGFILE}
+
+        # Backup original configuration
+        cp /etc/ssh/sshd_config /etc/ssh/sshd_config.back
+
+        # Restrict SSHD server usage
+        sed -i "/X11Forwarding/d" /etc/ssh/sshd_config
+        sed -i "/PermitRootLogin/d" /etc/ssh/sshd_config
+        sed -i "/PasswordAuthentication/d" /etc/ssh/sshd_config
+
+        # Add custom settings
+        edit_sshd_config && echo ":: sshd_config file edited successfully." &>> ${LOGFILE}
+    fi
+}
+
 # Program entrypoint
 # ------------------
 
@@ -223,6 +269,7 @@ main()
     # Set basic configuration
     set_root
     set_user
+    set_sshd
 
     # Display logs
     show_log ${LOGFILE}
