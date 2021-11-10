@@ -6,7 +6,7 @@
 # Dialog settings
 OUTPUT=$(mktemp)
 LOGFILE=$(mktemp)
-BACKTITLE="Debian Post-installation Setup"
+BACKTITLE="Tekin Server Installer"
 
 # User settings
 ROOTPASS=""
@@ -14,6 +14,10 @@ USERPASS=""
 USERNAME=""
 USERHOME="/home/${USERNAME}"
 USERGROUPS="sudo,systemd-journal"
+
+# User dotfiles
+MYGITHUB="https://raw.githubusercontent.com/kh3phr3n/ocean-vps/master/src/dotfiles"
+DOTFILES=('.vimrc' '.gitconfig' '.bashrc' '.bash_logout' '.bash_profile' '.bash_aliases')
 
 # Utility functions
 # -----------------
@@ -55,7 +59,7 @@ show_log()
     whiptail \
         --backtitle  "${BACKTITLE}" \
         --title      "Journal [*]" \
-        --textbox    "$1" 24 62
+        --textbox    "$1" 25 75
 }
 
 # Don't forget environment variables!
@@ -111,7 +115,7 @@ sys_packages()
         --separate-output \
         --backtitle "${BACKTITLE}" \
         --title     "Selection [?]" \
-        --checklist "\nChoose which packages to install." 15 55 5 \
+        --checklist "\nChoose which packages to install." 15 45 5 \
             "1" "vim htop ranger ripgrep curl" ON \
             "2" "docker.io docker-compose" ON \
             "3" "man-db manpages" ON \
@@ -170,15 +174,36 @@ set_user()
         if [ "$?" -eq 0 ]
         then
             # Create user/groups and define password
-            useradd -m -s /bin/bash ${USERNAME}
-            usermod -aG $(<$OUTPUT) ${USERNAME}
+            useradd -m -s /bin/bash ${USERNAME} && echo ":: ${USERNAME} user created successfully." &>> ${LOGFILE}
+            usermod -aG $(<$OUTPUT) ${USERNAME} && echo ":: $(<$OUTPUT) groups added successfully." &>> ${LOGFILE}
             password ${USERNAME} ${USERPASS} &>> ${LOGFILE}
+        fi
+
+        whiptail \
+            --backtitle "${BACKTITLE}" \
+            --title     "Confirmation [?]" \
+            --yesno     "\nDo you want to download custom dotfiles?" 8 60
+
+        if [ "$?" -eq 0 ]
+        then
+            # Clean user's dotfiles
+            rm {/root,${USERHOME}}/{.bash*,.profile} && echo ":: user's dotfiles deleted successfully." &>> ${LOGFILE}
+
+            for dotfile in "${DOTFILES[@]}"
+            do
+                # Get dotfiles to Github
+                curl -sO "${MYGITHUB}/$dotfile"
+                # Set ${USERNAME}'s dotfiles
+                cp $dotfile ${USERHOME} && chown ${USERNAME}:${USERNAME} ${USERHOME}/$dotfile
+                # Process seems to be OK
+                [[ "$?" -eq 0 ]] && echo ":: $dotfile file created successfully." &>> ${LOGFILE}
+            done
         fi
     fi
 }
 
-# Program entry-point
-# -------------------
+# Program entrypoint
+# ------------------
 
 # Controller and program flow
 main()
