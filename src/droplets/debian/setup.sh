@@ -265,8 +265,8 @@ set_wall()
         cp /etc/default/ufw /etc/default/ufw.back && sed -i "/^IPV6/s/yes/no/" /etc/default/ufw
         [[ "$?" -eq 0 ]] && echo ":: ufw IPV6 support disabled successfully." &>> ${LOGFILE}
 
-        block ":: Deny all connections by default"
-        ufw default deny outgoing && ufw default deny incoming; pause
+        block ":: Deny all incoming connections"
+        ufw default allow outgoing && ufw default deny incoming; pause
 
         whiptail \
             --separate-output \
@@ -294,7 +294,7 @@ set_wall()
             for port in $(<$OUTPUT)
             do
                 # Restrict usage on port 22
-                [ "$port" -eq 22 ] && ufw limit $port
+                [ "$port" == "22" ] && ufw limit $port
                 # Create a new UFW rule
                 ufw allow $port && echo ":: port $port opened successfully." &>> ${LOGFILE}
             done
