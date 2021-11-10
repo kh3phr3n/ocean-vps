@@ -204,18 +204,20 @@ set_user()
 
         if [ "$?" -eq 0 ]
         then
+            block ":: Set up custom dotfiles"
+
             # Clean user's dotfiles
             rm {/root,${USERHOME}}/{.bash*,.profile} && echo ":: user's dotfiles deleted successfully." &>> ${LOGFILE}
 
             for dotfile in "${DOTFILES[@]}"
             do
                 # Get dotfiles to Github
-                curl -sO "${MYGITHUB}/$dotfile"
+                curl -O -# "${MYGITHUB}/$dotfile"
                 # Set ${USERNAME}'s dotfiles
                 cp $dotfile ${USERHOME} && chown ${USERNAME}:${USERNAME} ${USERHOME}/$dotfile
                 # Process seems to be OK
                 [[ "$?" -eq 0 ]] && echo ":: $dotfile file created successfully." &>> ${LOGFILE}
-            done
+            done; pause
         fi
     fi
 }
@@ -248,6 +250,61 @@ set_sshd()
     fi
 }
 
+# Configure firewall (UFW)
+set_wall()
+{
+    whiptail \
+        --backtitle "${BACKTITLE}" \
+        --title     "Confirmation [?]" \
+        --yesno     "\nDo you want to enable Uncomplicated Firewall (UFW)?" 8 60
+
+    # 0 means user hit [yes] button
+    if [ "$?" -eq 0 ]
+    then
+        # Disable UFW IPV6 support
+        cp /etc/default/ufw /etc/default/ufw.back && sed -i "/^IPV6/s/yes/no/" /etc/default/ufw
+        [[ "$?" -eq 0 ]] && echo ":: ufw IPV6 support disabled successfully." &>> ${LOGFILE}
+
+        block ":: Deny all connections by default"
+        ufw default deny outgoing && ufw default deny incoming; pause
+
+        whiptail \
+            --separate-output \
+            --backtitle "${BACKTITLE}" \
+            --title     "Selection [?]" \
+            --checklist "\nChoose which ports to open." 20 38 11 \
+                "22"    "SSH" ON \
+                "80"    "HTTP" ON \
+                "443"   "HTTPS" ON \
+                "3306"  "MySQL" OFF \
+                "5432"  "PostgreSQL" OFF \
+                "8080"  "Adminer" OFF \
+                "8083"  "MQTT" OFF \
+                "5672"  "AMQP" OFF \
+                "8081"  "Redis (Admin)" OFF \
+                "18083" "EMQX (Admin)" OFF \
+                "15672" "RabbitMQ (Admin)" OFF \
+                2>${OUTPUT}
+
+        # 0 means user hit [yes] button
+        if [ "$?" -eq 0 ]
+        then
+            block ":: Allow UFW specific ports"
+
+            for port in $(<$OUTPUT)
+            do
+                # Restrict usage on port 22
+                [ "$port" -eq 22 ] && ufw limit $port
+                # Create a new UFW rule
+                ufw allow $port && echo ":: port $port opened successfully." &>> ${LOGFILE}
+            done
+
+            # We can now enable UFW!
+            ufw enable && echo ":: ufw enabled successfully." &>> ${LOGFILE}; pause
+        fi
+    fi
+}
+
 # Program entrypoint
 # ------------------
 
@@ -270,6 +327,7 @@ main()
     set_root
     set_user
     set_sshd
+    set_wall
 
     # Display logs
     show_log ${LOGFILE}
