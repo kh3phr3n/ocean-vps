@@ -18,6 +18,26 @@ USERGROUPS="sudo,systemd-journal"
 # Utility functions
 # -----------------
 
+# Initialize colors
+init_colors ()
+{
+    PURPLE='\e[0;35m'
+    YELLOW='\e[1;33m'
+    GREEN='\e[0;32m'
+    CYAN='\e[0;36m'
+    BLUE='\e[1;34m'
+    RED='\e[0;31m'
+    OFF='\e[0m'
+}
+
+block () {
+    clear; echo -e "${BLUE}$1\n${OFF}"
+}
+
+pause () {
+    echo -e "${YELLOW}\n:: Press any key to continue...${OFF}"; read
+}
+
 # Update user's password
 # $1: username
 # $2: password
@@ -79,8 +99,8 @@ sys_upgrade()
     # 0 means user hit [yes] button
     if [ "$?" -eq 0 ]
     then
-        # Package maintenance
-        apt update && apt upgrade && apt autoremove
+        block ":: Synchronize and upgrade packages"
+        apt update && apt upgrade && apt autoremove; pause
     fi
 }
 
@@ -92,15 +112,17 @@ sys_packages()
         --backtitle "${BACKTITLE}" \
         --title     "Selection [?]" \
         --checklist "\nChoose which packages to install." 15 55 5 \
-            "1" "Utils: vim htop ranger ripgrep curl" ON \
-            "2" "Docker: docker.io docker-compose" ON \
-            "3" "Manpages: man-db manpages" ON \
-            "4" "Firewall: ufw netcat" ON \
+            "1" "vim htop ranger ripgrep curl" ON \
+            "2" "docker.io docker-compose" ON \
+            "3" "man-db manpages" ON \
+            "4" "ufw netcat" ON \
             2>${OUTPUT}
 
     # 0 means user hit [yes] button
     if [ "$?" -eq 0 ]
     then
+        block ":: Install additionnal packages"
+
         for item in $(<$OUTPUT)
         do
             case $item in
@@ -109,7 +131,7 @@ sys_packages()
                 "3") apt install man-db manpages;;
                 "4") apt install ufw netcat;;
             esac
-        done
+        done; pause
     fi
 }
 
@@ -134,7 +156,7 @@ set_user()
     whiptail \
         --backtitle "${BACKTITLE}" \
         --title     "Confirmation [?]" \
-        --yesno     "\nDo you want to create a new  user (${USERNAME})?" 8 60
+        --yesno     "\nDo you want to create a new user (${USERNAME})?" 8 60
 
     # 0 means user hit [yes] button
     if [ "$?" -eq 0 ]
@@ -162,6 +184,9 @@ set_user()
 main()
 {
     clear
+    # Initialization
+    init_colors
+
     # Run some checks
     check_env
     check_uid
