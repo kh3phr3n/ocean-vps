@@ -54,6 +54,7 @@ password () {
 # File editing functions
 # ----------------------
 
+# /!\ Append mode
 edit_sshd_config ()
 {
 cat << EOF >> /etc/ssh/sshd_config
@@ -337,6 +338,9 @@ main()
 
     # File auto-destruction
     shred --zero --verbose --iterations=10 --remove=wipesync ${0}
+
+    # Let's finish!
+    reboot
 }
 
 # We start here!
