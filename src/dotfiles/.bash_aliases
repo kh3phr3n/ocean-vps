@@ -26,3 +26,5 @@ alias rmdss='find . -name "*.DS_Store" -type f -delete'
 # System packages
 alias upgrade-system='sudo sh -c "apt update && apt upgrade"'
 
+# System utilities
+alias totp='google-authenticator --force --time-based --disallow-reuse --rate-time=30 --window-size=3 --rate-limit=3'

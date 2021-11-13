@@ -66,6 +66,18 @@ password () {
 # ----------------------
 
 # /!\ Append mode
+edit_pamd_sshd ()
+{
+cat << EOF >> /etc/pam.d/sshd
+
+# Custom settings
+# ---------------
+
+auth required pam_google_authenticator.so
+EOF
+}
+
+# /!\ Append mode
 edit_sshd_config ()
 {
 cat << EOF >> /etc/ssh/sshd_config
@@ -79,6 +91,23 @@ PasswordAuthentication no
 EOF
 }
 
+# /!\ Append mode
+edit_totp_sshd_config ()
+{
+cat << EOF >> /etc/ssh/sshd_config
+ChallengeResponseAuthentication yes
+
+# 2FA TOTP Users
+# --------------
+
+Match User root
+    AuthenticationMethods publickey,keyboard-interactive
+
+Match User ${USERNAME}
+    AuthenticationMethods publickey,keyboard-interactive
+EOF
+}
+
 # Installer functions
 # -------------------
 
@@ -89,7 +118,7 @@ show_log ()
     whiptail \
         --backtitle  "${BACKTITLE}" \
         --title      "Journal [*]" \
-        --textbox    "$1" 25 85
+        --textbox    "$1" 35 75
 }
 
 # Don't forget environment variables!
@@ -137,7 +166,7 @@ set_pkgs ()
         apt update && apt upgrade --assume-yes && apt autoremove; pause
 
         block ":: Install additionnal packages"
-        apt install --assume-yes --no-install-recommends curl htop ranger; pause
+        apt install --assume-yes --no-install-recommends git curl htop ranger; pause
 
         whiptail \
             --backtitle "${BACKTITLE}" \
@@ -212,7 +241,10 @@ set_user ()
                 cp $dotfile ${USERHOME} && chown ${USERNAME}:${USERNAME} ${USERHOME}/$dotfile
                 # Process seems to be OK
                 [[ "$?" -eq 0 ]] && echo ":: $dotfile file created successfully." &>> ${LOGFILE}
-            done; pause
+            done
+
+            # Remove useless dotfiles for root user
+            rm /root/{.vimrc,.gitconfig,.wget-hsts}; pause
         fi
     fi
 }
@@ -242,6 +274,36 @@ set_sshd ()
 
         # Add custom settings
         edit_sshd_config && echo ":: sshd_config file edited successfully." &>> ${LOGFILE}
+
+        # Add extra layer of security
+        set_totp
+    fi
+}
+
+set_totp ()
+{
+    whiptail \
+        --backtitle "${BACKTITLE}" \
+        --title     "Confirmation [?]" \
+        --yesno     "\nDo you want to enable SSH 2FA (Two-Factor Authentication)?" 8 70
+
+    # 0 means user hit [yes] button
+    if [ "$?" -eq 0 ]
+    then
+        block ":: Install additionnal packages"
+        apt install --assume-yes --no-install-recommends libpam-google-authenticator; pause
+
+        block ":: Generate new QR code"
+        sudo -u ${USERNAME} google-authenticator \
+            --force --time-based --disallow-reuse --rate-time=30 --window-size=3 --rate-limit=3; pause
+
+        # Backup original configuration
+        cp /etc/pam.d/sshd /etc/pam.d/sshd.back
+
+        # Set up PAM and SSHD
+        sed -i "/@include common-auth/d" /etc/pam.d/sshd
+        sed -i "/ChallengeResponseAuthentication/d" /etc/ssh/sshd_config
+        edit_pamd_sshd && edit_totp_sshd_config && echo ":: 2FA activated successfully." &>> ${LOGFILE}
     fi
 }
 
