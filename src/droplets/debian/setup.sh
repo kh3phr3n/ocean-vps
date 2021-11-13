@@ -268,9 +268,9 @@ set_sshd ()
         cp /etc/ssh/sshd_config /etc/ssh/sshd_config.back
 
         # Restrict SSHD server usage
-        sed -i "/X11Forwarding/d" /etc/ssh/sshd_config
-        sed -i "/PermitRootLogin/d" /etc/ssh/sshd_config
-        sed -i "/PasswordAuthentication/d" /etc/ssh/sshd_config
+        sed -i "/X11Forwarding/{/^#/b;d}" /etc/ssh/sshd_config
+        sed -i "/PermitRootLogin/{/^#/b;d}" /etc/ssh/sshd_config
+        sed -i "/PasswordAuthentication/{/^#/b;d}" /etc/ssh/sshd_config
 
         # Add custom settings
         edit_sshd_config && echo ":: sshd_config file edited successfully." &>> ${LOGFILE}
@@ -301,8 +301,8 @@ set_totp ()
         cp /etc/pam.d/sshd /etc/pam.d/sshd.back
 
         # Set up PAM and SSHD
-        sed -i "/@include common-auth/d" /etc/pam.d/sshd
-        sed -i "/ChallengeResponseAuthentication/d" /etc/ssh/sshd_config
+        sed -i "/@include common-auth/s/^/# &/g" /etc/pam.d/sshd
+        sed -i "/ChallengeResponseAuthentication/{/^#/b;d}" /etc/ssh/sshd_config
         edit_pamd_sshd && edit_totp_sshd_config && echo ":: 2FA activated successfully." &>> ${LOGFILE}
     fi
 }
