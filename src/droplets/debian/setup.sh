@@ -44,6 +44,17 @@ pause () {
     echo -e "${YELLOW}\n:: Press any key to continue...${OFF}"; read
 }
 
+# Reboot machine
+# $1: shutdown seconds
+restart () {
+    block ":: Reboot Debian system"
+
+    for (( i=$1 ; i>0 ; i-- ))
+    do
+        echo -n "$i " && sleep 1
+    done; reboot
+}
+
 # Update user's password
 # $1: username
 # $2: password
@@ -73,16 +84,16 @@ EOF
 
 # Display a log file in a dialog box
 # $1: file
-show_log()
+show_log ()
 {
     whiptail \
         --backtitle  "${BACKTITLE}" \
         --title      "Journal [*]" \
-        --textbox    "$1" 25 75
+        --textbox    "$1" 25 85
 }
 
 # Don't forget environment variables!
-check_env()
+check_env ()
 {
     if [ -z "${ROOTPASS}" ] || [ -z "${USERPASS}" ] || [ -z "${USERNAME}" ] || [ $(pwd) != "/root" ]
     then
@@ -97,7 +108,7 @@ check_env()
 }
 
 # Root privileges are required
-check_uid()
+check_uid ()
 {
     if [ "${UID}" -ne 0 ]
     then
@@ -111,8 +122,8 @@ check_uid()
     fi
 }
 
-# Update package dependencies
-sys_upgrade()
+# Update and install package dependencies
+set_pkgs ()
 {
     whiptail \
         --backtitle "${BACKTITLE}" \
@@ -123,43 +134,26 @@ sys_upgrade()
     if [ "$?" -eq 0 ]
     then
         block ":: Synchronize and upgrade packages"
-        apt update && apt upgrade && apt autoremove; pause
-    fi
-}
+        apt update && apt upgrade --assume-yes && apt autoremove; pause
 
-# Install package dependencies
-sys_packages()
-{
-    whiptail \
-        --separate-output \
-        --backtitle "${BACKTITLE}" \
-        --title     "Selection [?]" \
-        --checklist "\nChoose which packages to install." 15 45 5 \
-            "1" "vim htop ranger ripgrep curl" ON \
-            "2" "docker.io docker-compose" ON \
-            "3" "man-db manpages" ON \
-            "4" "ufw netcat" ON \
-            2>${OUTPUT}
-
-    # 0 means user hit [yes] button
-    if [ "$?" -eq 0 ]
-    then
         block ":: Install additionnal packages"
+        apt install --assume-yes --no-install-recommends curl htop ranger; pause
 
-        for item in $(<$OUTPUT)
-        do
-            case $item in
-                "1") apt install vim htop ranger ripgrep curl;;
-                "2") apt install docker.io docker-compose;;
-                "3") apt install man-db manpages;;
-                "4") apt install ufw netcat;;
-            esac
-        done; pause
+        whiptail \
+            --backtitle "${BACKTITLE}" \
+            --title     "Confirmation [?]" \
+            --yesno     "\nDo you want to install Docker container runtime?" 8 60
+
+        if [ "$?" -eq 0 ]
+        then
+            block ":: Install Docker Engine packages"
+            apt install --assume-yes --no-install-recommends docker.io docker-compose; pause
+        fi
     fi
 }
 
 # Update root password to SHA512
-set_root()
+set_root ()
 {
     whiptail \
         --backtitle "${BACKTITLE}" \
@@ -174,7 +168,7 @@ set_root()
 }
 
 # Update root password to SHA512
-set_user()
+set_user ()
 {
     whiptail \
         --backtitle "${BACKTITLE}" \
@@ -224,7 +218,7 @@ set_user()
 }
 
 # Configure user's key and SSHD server
-set_sshd()
+set_sshd ()
 {
     whiptail \
         --backtitle "${BACKTITLE}" \
@@ -252,7 +246,7 @@ set_sshd()
 }
 
 # Configure firewall (UFW)
-set_wall()
+set_wall ()
 {
     whiptail \
         --backtitle "${BACKTITLE}" \
@@ -262,6 +256,9 @@ set_wall()
     # 0 means user hit [yes] button
     if [ "$?" -eq 0 ]
     then
+        block ":: Install additionnal packages"
+        apt install --assume-yes --no-install-recommends ufw netcat; pause
+
         # Disable UFW IPV6 support
         cp /etc/default/ufw /etc/default/ufw.back && sed -i "/^IPV6/s/yes/no/" /etc/default/ufw
         [[ "$?" -eq 0 ]] && echo ":: ufw IPV6 support disabled successfully." &>> ${LOGFILE}
@@ -306,11 +303,22 @@ set_wall()
     fi
 }
 
+del_setup ()
+{
+    # Display logs
+    show_log ${LOGFILE}
+
+    block ":: Clean up setup environment"
+
+    # Clean all files
+    rm ${LOGFILE} ${OUTPUT} && shred --zero --verbose --iterations=10 --remove=wipesync ${0}; pause
+}
+
 # Program entrypoint
 # ------------------
 
 # Controller and program flow
-main()
+main ()
 {
     clear
     # Initialization
@@ -321,26 +329,19 @@ main()
     check_uid
 
     # System actions
-    sys_upgrade
-    sys_packages
+    set_pkgs
 
-    # Set basic configuration
+    # Set basic confs
     set_root
     set_user
     set_sshd
     set_wall
 
-    # Display logs
-    show_log ${LOGFILE}
-
-    # Clean temporary files
-    rm ${LOGFILE} ${OUTPUT}
-
-    # File auto-destruction
-    shred --zero --verbose --iterations=10 --remove=wipesync ${0}
+    # Clean up
+    del_setup
 
     # Let's finish!
-    reboot
+    restart 5
 }
 
 # We start here!
