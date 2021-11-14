@@ -23,8 +23,8 @@ alias rmclh='rm ~/.bash_history && history -cw'
 alias rmpyc='find . -name "*.pyc" -type f -delete'
 alias rmdss='find . -name "*.DS_Store" -type f -delete'
 
-# System packages
-alias upgrade-system='sudo sh -c "apt update && apt upgrade"'
+# Security utilities
+alias rkhunter='sudo sh -c "rkhunter --propupd && rkhunter --check"'
 
 # System utilities
-alias totp='google-authenticator --force --time-based --disallow-reuse --rate-time=30 --window-size=3 --rate-limit=3'
+alias new-totp='google-authenticator --force --time-based --disallow-reuse --rate-time=30 --window-size=3 --rate-limit=3'

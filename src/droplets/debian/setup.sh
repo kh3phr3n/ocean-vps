@@ -358,9 +358,14 @@ set_wall ()
         block ":: Install additionnal packages"
         apt install --assume-yes --no-install-recommends ufw netcat; pause
 
-        # Disable UFW IPV6 support
-        cp /etc/default/ufw /etc/default/ufw.back && sed -i "/^IPV6/s/yes/no/" /etc/default/ufw
-        [[ "$?" -eq 0 ]] && echo ":: ufw IPV6 support disabled successfully." &>> ${LOGFILE}
+        # Backup original configurations
+        cp /etc/default/ufw /etc/default/ufw.back
+        cp /etc/ufw/before.rules /etc/ufw/before.rules.back
+
+        # Disable UFW IPV6 support + ping
+        sed -i "/^IPV6/s/yes/no/" /etc/default/ufw && \
+        sed -i "/input -p icmp --icmp-type echo/s/ACCEPT/DROP/" /etc/ufw/before.rules
+        [[ "$?" -eq 0 ]] && echo ":: ipv6 support and ping disabled successfully." &>> ${LOGFILE}
 
         block ":: Deny all incoming connections"
         ufw default allow outgoing && ufw default deny incoming; pause
@@ -397,8 +402,26 @@ set_wall ()
             done
 
             # We can now enable UFW!
-            ufw enable && echo ":: ufw enabled successfully." &>> ${LOGFILE}; pause
+            ufw enable && echo ":: ufw firewall enabled successfully." &>> ${LOGFILE}; pause
         fi
+    fi
+}
+
+# Security tools
+set_secu ()
+{
+    whiptail \
+        --backtitle "${BACKTITLE}" \
+        --title     "Confirmation [?]" \
+        --yesno     "\nDo you want to install security tools?" 8 60
+
+    if [ "$?" -eq 0 ]
+    then
+        block ":: Install additionnal packages"
+        apt install --assume-yes --no-install-recommends rkhunter; pause
+
+        block ":: Rootkit Hunter system check"
+        rkhunter --check; pause
     fi
 }
 
@@ -429,12 +452,11 @@ main ()
 
     # System actions
     set_pkgs
-
-    # Set basic confs
     set_root
     set_user
     set_sshd
     set_wall
+    set_secu
 
     # Clean up
     del_setup
