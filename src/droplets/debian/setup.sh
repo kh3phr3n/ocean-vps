@@ -4,11 +4,11 @@
 # ---------------------
 
 # Root settings
-ROOTPASS="T3k1N"
+ROOTPASS=""
 
 # User settings
-USERNAME="tekin"
-USERPASS="T3k1N"
+USERNAME=""
+USERPASS=""
 USERHOME="/home/${USERNAME}"
 USERGROUPS="sudo,systemd-journal"
 
