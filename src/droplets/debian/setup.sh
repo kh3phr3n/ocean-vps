@@ -164,19 +164,56 @@ set_pkgs ()
     then
         block ":: Synchronize and upgrade packages"
         apt update && apt upgrade --assume-yes && apt autoremove; pause
+    fi
 
-        block ":: Install additionnal packages"
+    whiptail \
+        --backtitle "${BACKTITLE}" \
+        --title     "Confirmation [?]" \
+        --yesno     "\nDo you want to install utility packages (git, curl, etc...)?" 8 70
+
+    if [ "$?" -eq 0 ]
+    then
+        block ":: Install additionnal utility packages"
         apt install --assume-yes --no-install-recommends git curl htop ranger; pause
+    fi
 
+    whiptail \
+        --backtitle "${BACKTITLE}" \
+        --title     "Confirmation [?]" \
+        --yesno     "\nDo you want to install Docker container runtime?" 8 60
+
+    if [ "$?" -eq 0 ]
+    then
+        block ":: Install Docker Engine packages"
+        apt install --assume-yes --no-install-recommends docker.io docker-compose; pause
+    fi
+
+    whiptail \
+        --backtitle "${BACKTITLE}" \
+        --title     "Confirmation [?]" \
+        --yesno     "\nDo you want to install NodeJS environment?" 8 60
+
+    if [ "$?" -eq 0 ]
+    then
         whiptail \
+            --separate-output \
             --backtitle "${BACKTITLE}" \
-            --title     "Confirmation [?]" \
-            --yesno     "\nDo you want to install Docker container runtime?" 8 60
+            --title     "Selection [?]" \
+            --radiolist "\nChoose which version to install." 20 38 11 \
+                "12"      "Node.js v12.x"   OFF \
+                "14"      "Node.js v14.x"   OFF \
+                "16"      "Node.js v16.x"   OFF \
+                "lts"     "Node.js LTS"     ON  \
+                "current" "Node.js Current" OFF \
+                2>${OUTPUT}
 
-        if [ "$?" -eq 0 ]
+        if [ "$?" -eq 0 ] && [ ! -z "$(<$OUTPUT)" ]
         then
-            block ":: Install Docker Engine packages"
-            apt install --assume-yes --no-install-recommends docker.io docker-compose; pause
+            block ":: Add NodeSource Binary Distribution"
+            curl -fsSL https://deb.nodesource.com/setup_$(<$OUTPUT).x | bash - | sed -e "1d;$d"; pause
+
+            block ":: Install NodeJS packages"
+            apt install --assume-yes --no-install-recommends nodejs; pause
         fi
     fi
 }
@@ -333,16 +370,16 @@ set_wall ()
             --backtitle "${BACKTITLE}" \
             --title     "Selection [?]" \
             --checklist "\nChoose which ports to open." 20 38 11 \
-                "22"    "SSH" ON \
-                "80"    "HTTP" ON \
-                "443"   "HTTPS" ON \
-                "3306"  "MySQL" OFF \
-                "5432"  "PostgreSQL" OFF \
-                "8080"  "Adminer" OFF \
-                "8083"  "MQTT" OFF \
-                "5672"  "AMQP" OFF \
-                "8081"  "Redis (Admin)" OFF \
-                "18083" "EMQX (Admin)" OFF \
+                "22"    "SSH"              ON \
+                "80"    "HTTP"             ON \
+                "443"   "HTTPS"            ON \
+                "3306"  "MySQL"            OFF \
+                "5432"  "PostgreSQL"       OFF \
+                "8080"  "Adminer"          OFF \
+                "8083"  "MQTT"             OFF \
+                "5672"  "AMQP"             OFF \
+                "8081"  "Redis (Admin)"    OFF \
+                "18083" "EMQX (Admin)"     OFF \
                 "15672" "RabbitMQ (Admin)" OFF \
                 2>${OUTPUT}
 
