@@ -4,11 +4,11 @@
 # ---------------------
 
 # Root settings
-ROOTPASS=""
+ROOTPASS="T3k1N"
 
 # User settings
-USERNAME=""
-USERPASS=""
+USERNAME="tekin"
+USERPASS="T3k1N"
 USERHOME="/home/${USERNAME}"
 USERGROUPS="sudo,systemd-journal"
 
@@ -59,7 +59,7 @@ restart () {
 # $1: username
 # $2: password
 password () {
-    printf "$1:$2" | chpasswd --crypt-method=SHA512 --sha-rounds=5000 && echo ":: ${1}'s password updated successfully"
+    printf "$1:$2" | chpasswd --crypt-method=SHA512 --sha-rounds=5000 && echo "[OK] Password updated successfully: ${1}"
 }
 
 # File editing functions
@@ -253,8 +253,8 @@ set_user ()
         if [ "$?" -eq 0 ]
         then
             # Create user/groups and define password
-            useradd -m -s /bin/bash ${USERNAME} && echo ":: ${USERNAME} user created successfully." &>> ${LOGFILE}
-            usermod -aG $(<$OUTPUT) ${USERNAME} && echo ":: $(<$OUTPUT) groups added successfully." &>> ${LOGFILE}
+            useradd -m -s /bin/bash ${USERNAME} && echo "[OK] User created successfully: ${USERNAME}" &>> ${LOGFILE}
+            usermod -aG $(<$OUTPUT) ${USERNAME} && echo "[OK] Groups added successfully: $(<$OUTPUT)" &>> ${LOGFILE}
             password ${USERNAME} ${USERPASS} &>> ${LOGFILE}
         fi
 
@@ -268,7 +268,7 @@ set_user ()
             block ":: Set up custom dotfiles"
 
             # Clean user's dotfiles
-            rm {/root,${USERHOME}}/{.bash*,.profile} && echo ":: user's dotfiles deleted successfully." &>> ${LOGFILE}
+            rm {/root,${USERHOME}}/{.bash*,.profile} && echo "[OK] Original dotfiles deleted successfully" &>> ${LOGFILE}
 
             for dotfile in "${DOTFILES[@]}"
             do
@@ -277,7 +277,7 @@ set_user ()
                 # Set ${USERNAME}'s dotfiles
                 cp $dotfile ${USERHOME} && chown ${USERNAME}:${USERNAME} ${USERHOME}/$dotfile
                 # Process seems to be OK
-                [[ "$?" -eq 0 ]] && echo ":: $dotfile file created successfully." &>> ${LOGFILE}
+                [[ "$?" -eq 0 ]] && echo "[OK] Dotfile created successfully: $dotfile" &>> ${LOGFILE}
             done
 
             # Remove useless dotfiles for root user
@@ -299,7 +299,7 @@ set_sshd ()
     then
         # Copy SSH authorized key for ${USERNAME}
         mv .ssh ${USERHOME} && chown -R ${USERNAME}:${USERNAME} ${USERHOME}/.ssh
-        [[ "$?" -eq 0 ]] && echo ":: ${USERNAME}'s ssh configured successfully." &>> ${LOGFILE}
+        [[ "$?" -eq 0 ]] && echo "[OK] Service SSH activated successfully: ${USERNAME}" &>> ${LOGFILE}
 
         # Backup original configuration
         cp /etc/ssh/sshd_config /etc/ssh/sshd_config.back
@@ -310,7 +310,7 @@ set_sshd ()
         sed -i "/PasswordAuthentication/{/^#/b;d}" /etc/ssh/sshd_config
 
         # Add custom settings
-        edit_sshd_config && echo ":: sshd_config file edited successfully." &>> ${LOGFILE}
+        edit_sshd_config && echo "[OK] Service SSH configured successfully" &>> ${LOGFILE}
 
         # Add extra layer of security
         set_totp
@@ -340,7 +340,7 @@ set_totp ()
         # Set up PAM and SSHD
         sed -i "/@include common-auth/s/^/# &/g" /etc/pam.d/sshd
         sed -i "/ChallengeResponseAuthentication/{/^#/b;d}" /etc/ssh/sshd_config
-        edit_pamd_sshd && edit_totp_sshd_config && echo ":: 2FA activated successfully." &>> ${LOGFILE}
+        edit_pamd_sshd && edit_totp_sshd_config && echo "[OK] Service SSH 2FA configured successfully: ${USERNAME}" &>> ${LOGFILE}
     fi
 }
 
@@ -365,7 +365,7 @@ set_wall ()
         # Disable UFW IPV6 support + ping
         sed -i "/^IPV6/s/yes/no/" /etc/default/ufw && \
         sed -i "/input -p icmp --icmp-type echo/s/ACCEPT/DROP/" /etc/ufw/before.rules
-        [[ "$?" -eq 0 ]] && echo ":: ipv6 support and ping disabled successfully." &>> ${LOGFILE}
+        [[ "$?" -eq 0 ]] && echo "[OK] Service UFW configured successfully" &>> ${LOGFILE}
 
         block ":: Deny all incoming connections"
         ufw default allow outgoing && ufw default deny incoming; pause
@@ -396,13 +396,13 @@ set_wall ()
             for port in $(<$OUTPUT)
             do
                 # Create new UFW rule
-                ufw allow $port && echo ":: port $port opened successfully." &>> ${LOGFILE}
+                ufw allow $port && echo "[OK] Port allowed successfully: $port" &>> ${LOGFILE}
                 # Restrict usage on port 22
                 [ "$port" == "22" ] && ufw limit $port
             done
 
             # We can now enable UFW!
-            ufw enable && echo ":: ufw firewall enabled successfully." &>> ${LOGFILE}; pause
+            ufw enable && echo "[OK] Service UFW enabled successfully" &>> ${LOGFILE}; pause
         fi
     fi
 }
