@@ -122,6 +122,12 @@ findtime = 10m
 banaction = ufw
 ignoreip = ${IPS}
 
+[sshd]
+enabled = true
+
+[sshd-ddos]
+enabled = true
+
 [recidive]
 enabled = true
 EOF
