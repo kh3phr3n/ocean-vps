@@ -289,6 +289,10 @@ set_user ()
             # Clean user's dotfiles
             rm {/root,${USERHOME}}/{.bash*,.profile} && echo "[OK] Original dotfiles deleted successfully" &>> ${LOGFILE}
 
+            # Create Docker configuration
+            [[ -x "/bin/docker" ]] && sudo -u ${USERNAME} \
+                curl -O -# --create-dirs --output-dir ${USERHOME}/.docker "${MYGITHUB}/.docker/config.json"
+
             for dotfile in "${DOTFILES[@]}"
             do
                 # Get dotfiles to Github
