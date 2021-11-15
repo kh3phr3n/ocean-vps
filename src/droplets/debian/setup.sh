@@ -12,6 +12,9 @@ USERPASS=""
 USERHOME="/home/${USERNAME}"
 USERGROUPS="sudo,systemd-journal"
 
+# Firewall whitelist
+IPS="127.0.0.1/8 ::1"
+
 # Dialog settings
 OUTPUT=$(mktemp)
 LOGFILE=$(mktemp)
@@ -105,6 +108,22 @@ Match User root
 
 Match User ${USERNAME}
     AuthenticationMethods publickey,keyboard-interactive
+EOF
+}
+
+# /!\ Create mode
+edit_fail2ban_jail_local ()
+{
+cat > /etc/fail2ban/jail.local << EOF
+[DEFAULT]
+bantime = 1d
+maxretry = 3
+findtime = 10m
+banaction = ufw
+ignoreip = ${IPS}
+
+[recidive]
+enabled = true
 EOF
 }
 
@@ -422,6 +441,20 @@ set_secu ()
 
         block ":: Rootkit Hunter system check"
         rkhunter --check; pause
+
+        whiptail \
+            --backtitle "${BACKTITLE}" \
+            --title     "Confirmation [?]" \
+            --yesno     "\nDo you want to install Fail2ban?" 8 60
+
+        if [ "$?" -eq 0 ]
+        then
+            block ":: Install additionnal packages"
+            apt install --assume-yes --no-install-recommends fail2ban
+
+            # Add custom settings
+            edit_fail2ban_jail_local && echo "[OK] Service Fail2ban configured successfully" &>> ${LOGFILE}; pause
+        fi
     fi
 }
 
