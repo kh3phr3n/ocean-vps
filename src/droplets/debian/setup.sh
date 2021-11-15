@@ -188,12 +188,12 @@ set_pkgs ()
     whiptail \
         --backtitle "${BACKTITLE}" \
         --title     "Confirmation [?]" \
-        --yesno     "\nDo you want to install utility packages (git, curl, etc...)?" 8 70
+        --yesno     "\nDo you want to install utility packages (git, htop, etc...)?" 8 70
 
     if [ "$?" -eq 0 ]
     then
         block ":: Install additionnal utility packages"
-        apt install --assume-yes --no-install-recommends git curl htop ranger; pause
+        apt install --assume-yes --no-install-recommends git htop ranger; pause
     fi
 
     whiptail \
@@ -275,6 +275,9 @@ set_user ()
             useradd -m -s /bin/bash ${USERNAME} && echo "[OK] User created successfully: ${USERNAME}" &>> ${LOGFILE}
             usermod -aG $(<$OUTPUT) ${USERNAME} && echo "[OK] Groups added successfully: $(<$OUTPUT)" &>> ${LOGFILE}
             password ${USERNAME} ${USERPASS} &>> ${LOGFILE}
+
+            # Remove user created on Scaleway
+            [[ -d "/home/debian" ]] && userdel --force --remove debian &> /dev/null
         fi
 
         whiptail \
@@ -304,7 +307,7 @@ set_user ()
             done
 
             # Remove useless dotfiles for root user
-            rm /root/{.vimrc,.gitconfig,.wget-hsts}; pause
+            rm -f /root/{.vimrc,.gitconfig,.wget-hsts}; pause
         fi
     fi
 }
