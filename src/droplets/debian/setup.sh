@@ -88,6 +88,7 @@ cat << EOF >> /etc/ssh/sshd_config
 # Custom settings
 # ---------------
 
+AddressFamily inet
 X11Forwarding no
 PermitRootLogin no
 PasswordAuthentication no
@@ -337,6 +338,7 @@ set_sshd ()
         cp /etc/ssh/sshd_config /etc/ssh/sshd_config.back
 
         # Restrict SSHD server usage
+        sed -i "/AddressFamily/{/^#/b;d}" /etc/ssh/sshd_config
         sed -i "/X11Forwarding/{/^#/b;d}" /etc/ssh/sshd_config
         sed -i "/PermitRootLogin/{/^#/b;d}" /etc/ssh/sshd_config
         sed -i "/PasswordAuthentication/{/^#/b;d}" /etc/ssh/sshd_config
