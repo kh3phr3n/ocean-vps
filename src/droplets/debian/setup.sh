@@ -3,6 +3,12 @@
 # Environment variables
 # ---------------------
 
+# Mailer settings
+SMTPUSER=""
+SMTPPASS=""
+SMTPHOST=""
+SMTPPORT="465"
+
 # Root settings
 ROOTPASS=""
 
@@ -39,17 +45,20 @@ init_colors ()
     OFF='\e[0m'
 }
 
-block () {
+block ()
+{
     clear; echo -e "${BLUE}$1\n${OFF}"
 }
 
-pause () {
+pause ()
+{
     echo -e "${YELLOW}\n:: Press any key to continue...${OFF}"; read
 }
 
 # Reboot machine
 # $1: shutdown seconds
-restart () {
+restart ()
+{
     block ":: Reboot Debian system"
 
     for (( i=$1 ; i>0 ; i-- ))
@@ -61,8 +70,19 @@ restart () {
 # Update user's password
 # $1: username
 # $2: password
-password () {
+password ()
+{
     printf "$1:$2" | chpasswd --crypt-method=SHA512 --sha-rounds=5000 && echo "[OK] Password updated successfully: ${1}"
+}
+
+# URL encoding
+# $1: encodable
+url_encode ()
+{
+    for (( i=0 ; i<${#1} ; i++ ))
+    do
+        x="${1:i:1}"; [[ "${x}" == [a-zA-Z0-9.~_-] ]] && echo -n "${x}" || printf '%%%02X' "'${x}"
+    done
 }
 
 # File editing functions
@@ -134,6 +154,22 @@ enabled = true
 EOF
 }
 
+# /!\ Create mode
+edit_mailrc ()
+{
+cat > /root/.mailrc << EOF
+set v15-compat
+set mimetypes-load-control
+set from="Messenger <${SMTPUSER}>"
+set mta=smtps://$(url_encode ${SMTPUSER}):$(url_encode ${SMTPPASS})@${SMTPHOST}:${SMTPPORT} \
+smtp-auth=login \
+smtp-use-starttls
+EOF
+
+# Only viewable by root
+chmod 0600 /root/.mailrc
+}
+
 # Installer functions
 # -------------------
 
@@ -150,7 +186,8 @@ show_log ()
 # Don't forget environment variables!
 check_env ()
 {
-    if [ -z "${ROOTPASS}" ] || [ -z "${USERPASS}" ] || [ -z "${USERNAME}" ] || [ $(pwd) != "/root" ]
+    if [ -z "${ROOTPASS}" ] || [ -z "${USERPASS}" ] || [ -z "${USERNAME}" ] || \
+       [ -z "${SMTPUSER}" ] || [ -z "${SMTPPASS}" ] || [ -z "${SMTPHOST}" ] || [ $(pwd) != "/root" ]
     then
         whiptail \
             --backtitle "${BACKTITLE}" \
@@ -473,6 +510,25 @@ set_secu ()
     fi
 }
 
+# Email service
+set_mail ()
+{
+    whiptail \
+        --backtitle "${BACKTITLE}" \
+        --title     "Confirmation [?]" \
+        --yesno     "\nDo you want to configure email service (S-nail)?" 8 60
+
+    if [ "$?" -eq 0 ]
+    then
+        block ":: Install additionnal packages"
+        apt install --assume-yes --no-install-recommends s-nail
+
+        # Create backward compatibility link + user configuration
+        ln -sf /usr/bin/s-nail /usr/bin/mail && edit_mailrc && \
+            echo "[OK] Service S-nail configured successfully" &>> ${LOGFILE}
+    fi
+}
+
 del_setup ()
 {
     # Display logs
@@ -505,6 +561,7 @@ main ()
     set_sshd
     set_wall
     set_secu
+    set_mail
 
     # Clean up
     del_setup
