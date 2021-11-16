@@ -396,7 +396,7 @@ set_wall ()
         cp /etc/default/ufw /etc/default/ufw.back
         cp /etc/ufw/before.rules /etc/ufw/before.rules.back
 
-        # Disable UFW IPV6 support + ping
+        # Disable UFW IPv6 support + ping
         sed -i "/^IPV6/s/yes/no/" /etc/default/ufw && \
         sed -i "/input -p icmp --icmp-type echo/s/ACCEPT/DROP/" /etc/ufw/before.rules
         [[ "$?" -eq 0 ]] && echo "[OK] Service UFW configured successfully" &>> ${LOGFILE}
