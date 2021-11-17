@@ -167,7 +167,7 @@ edit_mailrc ()
 cat > /root/.mailrc << EOF
 set v15-compat
 set mimetypes-load-control
-set from="Messenger <${SMTP_USER}>"
+set from="VPS Messenger <${SMTP_USER}>"
 set mta=smtps://$(url_encode ${SMTP_USER}):$(url_encode ${SMTP_PASS})@${SMTP_HOST}:${SMTP_PORT} \
 smtp-auth=login \
 smtp-use-starttls
@@ -510,6 +510,10 @@ set_secu ()
         then
             block ":: Install additionnal packages"
             apt install --assume-yes --no-install-recommends whois fail2ban
+
+            # Update original action for S-nail compatibility
+            cp /etc/fail2ban/action.d/mail-whois.conf /etc/fail2ban/action.d/mail-whois.conf.back && \
+                sed -i "/<dest>/s/-E 'set escape'/-S escape/" /etc/fail2ban/action.d/mail-whois.conf
 
             # Add custom settings
             edit_fail2ban_jail_local && echo "[OK] Service Fail2ban configured successfully" &>> ${LOGS}; pause
