@@ -29,4 +29,5 @@ alias rkhunter='sudo sh -c "rkhunter --propupd && rkhunter --check"'
 # System utilities
 alias ban-ip='fail2ban-client set sshd banip'
 alias unban-ip='fail2ban-client set sshd unbanip'
+alias white-ip='fail2ban-client set sshd addignoreip'
 alias new-totp='google-authenticator --force --time-based --disallow-reuse --rate-time=30 --window-size=3 --rate-limit=3'

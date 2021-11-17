@@ -3,6 +3,9 @@
 # Environment variables
 # ---------------------
 
+# Admin email
+SEND_ALERT_TO=""
+
 # Mailer settings
 SMTPUSER=""
 SMTPPASS=""
@@ -143,14 +146,17 @@ findtime = 10m
 banaction = ufw
 ignoreip = ${IPS}
 
-[sshd]
-enabled = true
+# Alert email
+action = %(action_mw)s
+sender = ${SMTPUSER}
+destemail = ${SEND_ALERT_TO}
 
-[sshd-ddos]
+[sshd]
 enabled = true
 
 [recidive]
 enabled = true
+bantime = 10d
 EOF
 }
 
@@ -186,7 +192,7 @@ show_log ()
 # Don't forget environment variables!
 check_env ()
 {
-    if [ -z "${ROOTPASS}" ] || [ -z "${USERPASS}" ] || [ -z "${USERNAME}" ] || \
+    if [ -z "${ROOTPASS}" ] || [ -z "${USERPASS}" ] || [ -z "${USERNAME}" ] || [ -z "${SEND_ALERT_TO}" ] \
        [ -z "${SMTPUSER}" ] || [ -z "${SMTPPASS}" ] || [ -z "${SMTPHOST}" ] || [ $(pwd) != "/root" ]
     then
         whiptail \
@@ -502,7 +508,7 @@ set_secu ()
         if [ "$?" -eq 0 ]
         then
             block ":: Install additionnal packages"
-            apt install --assume-yes --no-install-recommends fail2ban
+            apt install --assume-yes --no-install-recommends whois fail2ban
 
             # Add custom settings
             edit_fail2ban_jail_local && echo "[OK] Service Fail2ban configured successfully" &>> ${LOGFILE}; pause
