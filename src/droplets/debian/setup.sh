@@ -7,30 +7,30 @@
 SEND_ALERT_TO=""
 
 # Mailer settings
-SMTPUSER=""
-SMTPPASS=""
-SMTPHOST=""
-SMTPPORT="465"
+SMTP_USER=""
+SMTP_PASS=""
+SMTP_HOST=""
+SMTP_PORT="465"
 
 # Root settings
-ROOTPASS=""
+ROOT_PASS=""
 
 # User settings
-USERNAME=""
-USERPASS=""
-USERHOME="/home/${USERNAME}"
-USERGROUPS="sudo,systemd-journal"
+USER_NAME=""
+USER_PASS=""
+USER_HOME="/home/${USER_NAME}"
+USER_GROUPS="sudo,systemd-journal"
 
 # Firewall whitelist
-IPS="127.0.0.1/8 ::1"
+IP_WHITELIST="127.0.0.1/8 ::1"
 
 # Dialog settings
+LOGS=$(mktemp)
 OUTPUT=$(mktemp)
-LOGFILE=$(mktemp)
 BACKTITLE="Tekin Server Installer"
 
 # User dotfiles
-MYGITHUB="https://raw.githubusercontent.com/kh3phr3n/ocean-vps/master/src/dotfiles"
+GITHUB="https://raw.githubusercontent.com/kh3phr3n/ocean-vps/master/src/dotfiles"
 DOTFILES=('.vimrc' '.gitconfig' '.bashrc' '.bash_logout' '.bash_profile' '.bash_aliases')
 
 # Utility functions
@@ -130,7 +130,7 @@ ChallengeResponseAuthentication yes
 Match User root
     AuthenticationMethods publickey,keyboard-interactive
 
-Match User ${USERNAME}
+Match User ${USER_NAME}
     AuthenticationMethods publickey,keyboard-interactive
 EOF
 }
@@ -144,11 +144,11 @@ bantime = 1d
 maxretry = 3
 findtime = 10m
 banaction = ufw
-ignoreip = ${IPS}
+ignoreip = ${IP_WHITELIST}
 
 # Alert email
 action = %(action_mw)s
-sender = ${SMTPUSER}
+sender = ${SMTP_USER}
 destemail = ${SEND_ALERT_TO}
 
 [sshd]
@@ -166,8 +166,8 @@ edit_mailrc ()
 cat > /root/.mailrc << EOF
 set v15-compat
 set mimetypes-load-control
-set from="Messenger <${SMTPUSER}>"
-set mta=smtps://$(url_encode ${SMTPUSER}):$(url_encode ${SMTPPASS})@${SMTPHOST}:${SMTPPORT} \
+set from="Messenger <${SMTP_USER}>"
+set mta=smtps://$(url_encode ${SMTP_USER}):$(url_encode ${SMTP_PASS})@${SMTP_HOST}:${SMTP_PORT} \
 smtp-auth=login \
 smtp-use-starttls
 EOF
@@ -192,8 +192,8 @@ show_log ()
 # Don't forget environment variables!
 check_env ()
 {
-    if [ -z "${ROOTPASS}" ] || [ -z "${USERPASS}" ] || [ -z "${USERNAME}" ] || [ -z "${SEND_ALERT_TO}" ] \
-       [ -z "${SMTPUSER}" ] || [ -z "${SMTPPASS}" ] || [ -z "${SMTPHOST}" ] || [ $(pwd) != "/root" ]
+    if [ -z "${ROOT_PASS}" ] || [ -z "${USER_PASS}" ] || [ -z "${USER_NAME}" ] || [ -z "${SEND_ALERT_TO}" ] \
+       [ -z "${SMTP_USER}" ] || [ -z "${SMTP_PASS}" ] || [ -z "${SMTP_HOST}" ] || [ $(pwd) != "/root" ]
     then
         whiptail \
             --backtitle "${BACKTITLE}" \
@@ -298,7 +298,7 @@ set_root ()
     # 0 means user hit [yes] button
     if [ "$?" -eq 0 ]
     then
-        password root ${ROOTPASS} &>> ${LOGFILE}
+        password root ${ROOT_PASS} &>> ${LOGS}
     fi
 }
 
@@ -308,7 +308,7 @@ set_user ()
     whiptail \
         --backtitle "${BACKTITLE}" \
         --title     "Confirmation [?]" \
-        --yesno     "\nDo you want to create a new user (${USERNAME})?" 8 60
+        --yesno     "\nDo you want to create a new user (${USER_NAME})?" 8 60
 
     # 0 means user hit [yes] button
     if [ "$?" -eq 0 ]
@@ -316,15 +316,15 @@ set_user ()
         whiptail \
             --backtitle "${BACKTITLE}" \
             --title     "Question [?]" \
-            --inputbox  "\nEnter user groups separated by commas" 8 60 ${USERGROUPS} \
+            --inputbox  "\nEnter user groups separated by commas" 8 60 ${USER_GROUPS} \
             2>${OUTPUT}
 
         if [ "$?" -eq 0 ]
         then
             # Create user/groups and define password
-            useradd -m -s /bin/bash ${USERNAME} && echo "[OK] User created successfully: ${USERNAME}" &>> ${LOGFILE}
-            usermod -aG $(<$OUTPUT) ${USERNAME} && echo "[OK] Groups added successfully: $(<$OUTPUT)" &>> ${LOGFILE}
-            password ${USERNAME} ${USERPASS} &>> ${LOGFILE}
+            useradd -m -s /bin/bash ${USER_NAME} && echo "[OK] User created successfully: ${USER_NAME}" &>> ${LOGS}
+            usermod -aG $(<$OUTPUT) ${USER_NAME} && echo "[OK] Groups added successfully: $(<$OUTPUT)" &>> ${LOGS}
+            password ${USER_NAME} ${USER_PASS} &>> ${LOGS}
 
             # Remove user created on Scaleway
             [[ -d "/home/debian" ]] && userdel --force --remove debian &> /dev/null
@@ -340,20 +340,20 @@ set_user ()
             block ":: Set up custom dotfiles"
 
             # Clean user's dotfiles
-            rm {/root,${USERHOME}}/{.bash*,.profile} && echo "[OK] Original dotfiles deleted successfully" &>> ${LOGFILE}
+            rm {/root,${USER_HOME}}/{.bash*,.profile} && echo "[OK] Original dotfiles deleted successfully" &>> ${LOGS}
 
             # Create Docker configuration
-            [[ -x "/bin/docker" ]] && sudo -u ${USERNAME} \
-                curl -O -# --create-dirs --output-dir ${USERHOME}/.docker "${MYGITHUB}/.docker/config.json"
+            [[ -x "/bin/docker" ]] && sudo -u ${USER_NAME} \
+                curl -O -# --create-dirs --output-dir ${USER_HOME}/.docker "${GITHUB}/.docker/config.json"
 
             for dotfile in "${DOTFILES[@]}"
             do
                 # Get dotfiles to Github
-                curl -O -# "${MYGITHUB}/$dotfile"
-                # Set ${USERNAME}'s dotfiles
-                cp $dotfile ${USERHOME} && chown ${USERNAME}:${USERNAME} ${USERHOME}/$dotfile
+                curl -O -# "${GITHUB}/$dotfile"
+                # Set ${USER_NAME}'s dotfiles
+                cp $dotfile ${USER_HOME} && chown ${USER_NAME}:${USER_NAME} ${USER_HOME}/$dotfile
                 # Process seems to be OK
-                [[ "$?" -eq 0 ]] && echo "[OK] Dotfile created successfully: $dotfile" &>> ${LOGFILE}
+                [[ "$?" -eq 0 ]] && echo "[OK] Dotfile created successfully: $dotfile" &>> ${LOGS}
             done
 
             # Remove useless dotfiles for root user
@@ -373,9 +373,9 @@ set_sshd ()
     # 0 means user hit [yes] button
     if [ "$?" -eq 0 ]
     then
-        # Copy SSH authorized key for ${USERNAME}
-        mv .ssh ${USERHOME} && chown -R ${USERNAME}:${USERNAME} ${USERHOME}/.ssh
-        [[ "$?" -eq 0 ]] && echo "[OK] Service SSH activated successfully: ${USERNAME}" &>> ${LOGFILE}
+        # Copy SSH authorized key for ${USER_NAME}
+        mv .ssh ${USER_HOME} && chown -R ${USER_NAME}:${USER_NAME} ${USER_HOME}/.ssh
+        [[ "$?" -eq 0 ]] && echo "[OK] Service SSH activated successfully: ${USER_NAME}" &>> ${LOGS}
 
         # Backup original configuration
         cp /etc/ssh/sshd_config /etc/ssh/sshd_config.back
@@ -387,7 +387,7 @@ set_sshd ()
         sed -i "/PasswordAuthentication/{/^#/b;d}" /etc/ssh/sshd_config
 
         # Add custom settings
-        edit_sshd_config && echo "[OK] Service SSH configured successfully" &>> ${LOGFILE}
+        edit_sshd_config && echo "[OK] Service SSH configured successfully" &>> ${LOGS}
 
         # Add extra layer of security
         set_totp
@@ -408,7 +408,7 @@ set_totp ()
         apt install --assume-yes --no-install-recommends libpam-google-authenticator; pause
 
         block ":: Generate new QR code"
-        sudo -u ${USERNAME} google-authenticator \
+        sudo -u ${USER_NAME} google-authenticator \
             --force --time-based --disallow-reuse --rate-time=30 --window-size=3 --rate-limit=3; pause
 
         # Backup original configuration
@@ -417,7 +417,7 @@ set_totp ()
         # Set up PAM and SSHD
         sed -i "/@include common-auth/s/^/# &/g" /etc/pam.d/sshd
         sed -i "/ChallengeResponseAuthentication/{/^#/b;d}" /etc/ssh/sshd_config
-        edit_pamd_sshd && edit_totp_sshd_config && echo "[OK] Service SSH 2FA configured successfully: ${USERNAME}" &>> ${LOGFILE}
+        edit_pamd_sshd && edit_totp_sshd_config && echo "[OK] Service SSH 2FA configured successfully: ${USER_NAME}" &>> ${LOGS}
     fi
 }
 
@@ -442,7 +442,7 @@ set_wall ()
         # Disable UFW IPv6 support + ping
         sed -i "/^IPV6/s/yes/no/" /etc/default/ufw && \
         sed -i "/input -p icmp --icmp-type echo/s/ACCEPT/DROP/" /etc/ufw/before.rules
-        [[ "$?" -eq 0 ]] && echo "[OK] Service UFW configured successfully" &>> ${LOGFILE}
+        [[ "$?" -eq 0 ]] && echo "[OK] Service UFW configured successfully" &>> ${LOGS}
 
         block ":: Deny all incoming connections"
         ufw default allow outgoing && ufw default deny incoming; pause
@@ -473,13 +473,13 @@ set_wall ()
             for port in $(<$OUTPUT)
             do
                 # Create new UFW rule
-                ufw allow $port && echo "[OK] Port allowed successfully: $port" &>> ${LOGFILE}
+                ufw allow $port && echo "[OK] Port allowed successfully: $port" &>> ${LOGS}
                 # Restrict usage on port 22
                 [ "$port" == "22" ] && ufw limit $port
             done
 
             # We can now enable UFW!
-            ufw enable && echo "[OK] Service UFW enabled successfully" &>> ${LOGFILE}; pause
+            ufw enable && echo "[OK] Service UFW enabled successfully" &>> ${LOGS}; pause
         fi
     fi
 }
@@ -511,7 +511,7 @@ set_secu ()
             apt install --assume-yes --no-install-recommends whois fail2ban
 
             # Add custom settings
-            edit_fail2ban_jail_local && echo "[OK] Service Fail2ban configured successfully" &>> ${LOGFILE}; pause
+            edit_fail2ban_jail_local && echo "[OK] Service Fail2ban configured successfully" &>> ${LOGS}; pause
         fi
     fi
 }
@@ -531,19 +531,19 @@ set_mail ()
 
         # Create backward compatibility link + user configuration
         ln -sf /usr/bin/s-nail /usr/bin/mail && edit_mailrc && \
-            echo "[OK] Service S-nail configured successfully" &>> ${LOGFILE}
+            echo "[OK] Service S-nail configured successfully" &>> ${LOGS}
     fi
 }
 
 del_setup ()
 {
     # Display logs
-    show_log ${LOGFILE}
+    show_log ${LOGS}
 
     block ":: Clean up setup environment"
 
     # Clean all files
-    rm ${LOGFILE} ${OUTPUT} && shred --zero --verbose --iterations=10 --remove=wipesync ${0}; pause
+    rm ${LOGS} ${OUTPUT} && shred --zero --verbose --iterations=10 --remove=wipesync ${0}; pause
 }
 
 # Program entrypoint
