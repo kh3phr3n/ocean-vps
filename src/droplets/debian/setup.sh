@@ -135,6 +135,21 @@ Match User ${USER_NAME}
 EOF
 }
 
+# /!\ Append mode
+edit_50unattended_upgrades ()
+{
+cat << EOF >> /etc/apt/apt.conf.d/50unattended-upgrades
+
+// Custom settings
+// ---------------
+
+Unattended-Upgrade::MailReport "always";
+Unattended-Upgrade::Mail "${SEND_ALERT_TO}";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
+EOF
+}
+
 # /!\ Create mode
 edit_fail2ban_jail_local ()
 {
@@ -376,7 +391,7 @@ set_sshd ()
     then
         # Copy SSH authorized key for ${USER_NAME}
         mv .ssh ${USER_HOME} && chown -R ${USER_NAME}:${USER_NAME} ${USER_HOME}/.ssh
-        [[ "$?" -eq 0 ]] && echo "[OK] Service SSH activated successfully: ${USER_NAME}" &>> ${LOGS}
+        [[ "$?" -eq 0 ]] && echo "[OK] Service SSH enabled successfully: ${USER_NAME}" &>> ${LOGS}
 
         # Backup original configuration
         cp /etc/ssh/sshd_config /etc/ssh/sshd_config.back
@@ -536,7 +551,26 @@ set_mail ()
 
         # Create backward compatibility link + user configuration
         ln -sf /usr/bin/s-nail /usr/bin/mail && edit_mailrc && \
-            echo "[OK] Service S-nail configured successfully" &>> ${LOGS}
+            echo "[OK] Service S-nail configured successfully" &>> ${LOGS}; pause
+    fi
+
+    whiptail \
+        --backtitle "${BACKTITLE}" \
+        --title     "Confirmation [?]" \
+        --yesno     "\nDo you want to enable Unattended-Upgrades notifications?" 8 65
+
+    if [ "$?" -eq 0 ]
+    then
+        # Backup original configuration
+        cp /etc/apt/apt.conf.d/50unattended-upgrades \
+           /etc/apt/apt.conf.d/50unattended-upgrades.back
+
+        # Check current settings
+        sed -i "/Upgrade::Mail/{/^\/\//b;d}" /etc/apt/apt.conf.d/50unattended-upgrades
+        sed -i "/Upgrade::Remove/{/^\/\//b;d}" /etc/apt/apt.conf.d/50unattended-upgrades
+
+        # Add custom settings
+        edit_50unattended_upgrades && echo "[OK] Service Unattended-Upgrades configured successfully" &>> ${LOGS}
     fi
 }
 
