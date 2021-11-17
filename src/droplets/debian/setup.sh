@@ -3,6 +3,9 @@
 # Environment variables
 # ---------------------
 
+# Firewall whitelist
+IP_WHITELIST="127.0.0.1/8 ::1"
+
 # Admin email
 SEND_ALERT_TO=""
 
@@ -20,9 +23,6 @@ USER_NAME=""
 USER_PASS=""
 USER_HOME="/home/${USER_NAME}"
 USER_GROUPS="sudo,systemd-journal"
-
-# Firewall whitelist
-IP_WHITELIST="127.0.0.1/8 ::1"
 
 # Dialog settings
 LOGS=$(mktemp)
@@ -147,6 +147,7 @@ banaction = ufw
 ignoreip = ${IP_WHITELIST}
 
 # Alert email
+mta = mail
 action = %(action_mw)s
 sender = ${SMTP_USER}
 destemail = ${SEND_ALERT_TO}
@@ -452,9 +453,9 @@ set_wall ()
             --backtitle "${BACKTITLE}" \
             --title     "Selection [?]" \
             --checklist "\nChoose which ports to open." 20 38 11 \
-                "22"    "SSH"              ON \
-                "80"    "HTTP"             ON \
-                "443"   "HTTPS"            ON \
+                "22"    "SSH"              ON  \
+                "80"    "HTTP"             ON  \
+                "443"   "HTTPS"            ON  \
                 "3306"  "MySQL"            OFF \
                 "5432"  "PostgreSQL"       OFF \
                 "8080"  "Adminer"          OFF \
