@@ -203,7 +203,8 @@ show_log ()
     whiptail \
         --backtitle  "${BACKTITLE}" \
         --title      "Journal [*]" \
-        --textbox    "$1" 35 75
+        --textbox    "$1" 35 75 \
+        --scrolltext
 }
 
 # Don't forget environment variables!
@@ -513,7 +514,7 @@ set_secu ()
     whiptail \
         --backtitle "${BACKTITLE}" \
         --title     "Confirmation [?]" \
-        --yesno     "\nDo you want to install security tools?" 8 60
+        --yesno     "\nDo you want to install security tools (rkhunter, etc...)?" 8 70
 
     if [ "$?" -eq 0 ]
     then
@@ -526,7 +527,7 @@ set_secu ()
         whiptail \
             --backtitle "${BACKTITLE}" \
             --title     "Confirmation [?]" \
-            --yesno     "\nDo you want to install Fail2ban?" 8 60
+            --yesno     "\nDo you want to prevent brute-force attacks with Fail2ban?" 8 70
 
         if [ "$?" -eq 0 ]
         then
