@@ -394,7 +394,7 @@ set_sshd ()
         [[ "$?" -eq 0 ]] && echo "[OK] Service SSH enabled successfully: ${USER_NAME}" &>> ${LOGS}
 
         # Backup original configuration
-        cp /etc/ssh/sshd_config /etc/ssh/sshd_config.back
+        cp /etc/ssh/sshd_config /etc/ssh/sshd_config~
 
         # Restrict SSHD server usage
         sed -i "/AddressFamily/{/^#/b;d}" /etc/ssh/sshd_config
@@ -428,10 +428,10 @@ set_totp ()
             --force --time-based --disallow-reuse --rate-time=30 --window-size=3 --rate-limit=3; pause
 
         # Backup original configuration
-        cp /etc/pam.d/sshd /etc/pam.d/sshd.back
+        cp /etc/pam.d/sshd /etc/pam.d/sshd~
 
         # Set up PAM and SSHD
-        sed -i "/@include common-auth/s/^/# &/g" /etc/pam.d/sshd
+        sed -i "/@include common-auth/s/^/# &/" /etc/pam.d/sshd
         sed -i "/ChallengeResponseAuthentication/{/^#/b;d}" /etc/ssh/sshd_config
         edit_pamd_sshd && edit_totp_sshd_config && echo "[OK] Service SSH 2FA configured successfully: ${USER_NAME}" &>> ${LOGS}
     fi
@@ -452,8 +452,8 @@ set_wall ()
         apt install --assume-yes --no-install-recommends ufw netcat; pause
 
         # Backup original configurations
-        cp /etc/default/ufw /etc/default/ufw.back
-        cp /etc/ufw/before.rules /etc/ufw/before.rules.back
+        cp /etc/default/ufw /etc/default/ufw~
+        cp /etc/ufw/before.rules /etc/ufw/before.rules~
 
         # Disable UFW IPv6 support + ping
         sed -i "/^IPV6/s/yes/no/" /etc/default/ufw && \
@@ -527,7 +527,7 @@ set_secu ()
             apt install --assume-yes --no-install-recommends whois fail2ban
 
             # Update original action for S-nail compatibility
-            cp /etc/fail2ban/action.d/mail-whois.conf /etc/fail2ban/action.d/mail-whois.conf.back && \
+            cp /etc/fail2ban/action.d/mail-whois.conf /etc/fail2ban/action.d/mail-whois.conf~ && \
                 sed -i "/<dest>/s/-E 'set escape'/-S escape/" /etc/fail2ban/action.d/mail-whois.conf
 
             # Add custom settings
@@ -563,7 +563,7 @@ set_mail ()
     then
         # Backup original configuration
         cp /etc/apt/apt.conf.d/50unattended-upgrades \
-           /etc/apt/apt.conf.d/50unattended-upgrades.back
+           /etc/apt/apt.conf.d/50unattended-upgrades~
 
         # Check current settings
         sed -i "/Upgrade::Mail/{/^\/\//b;d}" /etc/apt/apt.conf.d/50unattended-upgrades
