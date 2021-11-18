@@ -21,7 +21,7 @@ USER_PASS=""
 USER_HOME="/home/${USER_NAME}"
 USER_GROUPS="sudo,systemd-journal"
 
-# Firewall settings
+# Firewall/Fail2ban settings
 IP_WHITELIST="127.0.0.1/8 ::1"
 ALLOW_OUT_PORTS=('53' '80' '443' '465')
 
@@ -489,7 +489,7 @@ set_wall ()
 
             for inPort in $(<$OUTPUT)
             do
-                # Create new UFW rule
+                # Create new UFW incoming rule
                 ufw allow in $inPort && echo "[OK] IN port allowed successfully: $inPort" &>> ${LOGS}
                 # Restrict usage on port 22
                 [ "$inPort" == "22" ] && ufw limit $inPort
@@ -497,7 +497,7 @@ set_wall ()
 
             for outPort in "${ALLOW_OUT_PORTS[@]}"
             do
-                # Create new UFW rule
+                # Create new UFW outgoing rule
                 ufw allow out $outPort && echo "[OK] OUT port allowed successfully: $outPort" &>> ${LOGS}
             done
 
