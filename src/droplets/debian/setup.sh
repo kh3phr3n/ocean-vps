@@ -3,9 +3,6 @@
 # Environment variables
 # ---------------------
 
-# Firewall whitelist
-IP_WHITELIST="127.0.0.1/8 ::1"
-
 # Admin email
 SEND_ALERT_TO=""
 
@@ -24,10 +21,14 @@ USER_PASS=""
 USER_HOME="/home/${USER_NAME}"
 USER_GROUPS="sudo,systemd-journal"
 
+# Firewall settings
+IP_WHITELIST="127.0.0.1/8 ::1"
+ALLOW_OUT_PORTS=('53' '80' '443' '465')
+
 # Dialog settings
 LOGS=$(mktemp)
 OUTPUT=$(mktemp)
-BACKTITLE="Tekin Server Installer"
+BACKTITLE="Tekin Server Cloud Installer"
 
 # User dotfiles
 GITHUB="https://raw.githubusercontent.com/kh3phr3n/ocean-vps/master/src/dotfiles"
@@ -461,13 +462,13 @@ set_wall ()
         [[ "$?" -eq 0 ]] && echo "[OK] Service UFW configured successfully" &>> ${LOGS}
 
         block ":: Deny all incoming connections"
-        ufw default allow outgoing && ufw default deny incoming; pause
+        ufw default deny incoming && ufw default deny outgoing; pause
 
         whiptail \
             --separate-output \
             --backtitle "${BACKTITLE}" \
             --title     "Selection [?]" \
-            --checklist "\nChoose which ports to open." 20 38 11 \
+            --checklist "\nChoose which ports to open (IN)" 20 38 11 \
                 "22"    "SSH"              ON  \
                 "80"    "HTTP"             ON  \
                 "443"   "HTTPS"            ON  \
@@ -486,12 +487,18 @@ set_wall ()
         then
             block ":: Allow UFW specific ports"
 
-            for port in $(<$OUTPUT)
+            for inPort in $(<$OUTPUT)
             do
                 # Create new UFW rule
-                ufw allow $port && echo "[OK] Port allowed successfully: $port" &>> ${LOGS}
+                ufw allow in $inPort && echo "[OK] IN port allowed successfully: $inPort" &>> ${LOGS}
                 # Restrict usage on port 22
-                [ "$port" == "22" ] && ufw limit $port
+                [ "$inPort" == "22" ] && ufw limit $inPort
+            done
+
+            for outPort in "${ALLOW_OUT_PORTS[@]}"
+            do
+                # Create new UFW rule
+                ufw allow out $outPort && echo "[OK] OUT port allowed successfully: $outPort" &>> ${LOGS}
             done
 
             # We can now enable UFW!
