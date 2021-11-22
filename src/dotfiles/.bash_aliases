@@ -15,6 +15,10 @@ alias sudo='sudo '
 # Network utilities
 alias onl='ping -c 10 1.1.1.1'
 
+# Docker utilities
+alias dk='sudo docker'
+alias dkc='sudo docker-compose'
+
 # Webdev utilities
 alias sql='mysql --pager --auto-vertical-output'
 

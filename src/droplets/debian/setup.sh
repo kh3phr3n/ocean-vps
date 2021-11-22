@@ -31,8 +31,12 @@ OUTPUT=$(mktemp)
 BACKTITLE="Tekin Server Cloud Installer"
 
 # User dotfiles
-GITHUB="https://raw.githubusercontent.com/kh3phr3n/ocean-vps/master/src/dotfiles"
 DOTFILES=('.vimrc' '.gitconfig' '.bashrc' '.bash_logout' '.bash_profile' '.bash_aliases')
+DOTFILES_GIT_URL="https://raw.githubusercontent.com/kh3phr3n/ocean-vps/master/src/dotfiles"
+
+# Docker settings
+COMPOSE_TAG="2.1.1"
+COMPOSE_GIT_URL="https://github.com/docker/compose/releases/download/v${COMPOSE_TAG}/docker-compose-linux-x86_64"
 
 # Utility functions
 # -----------------
@@ -250,7 +254,7 @@ set_pkgs ()
     if [ "$?" -eq 0 ]
     then
         block ":: Synchronize and upgrade packages"
-        apt update && apt upgrade --assume-yes && apt autoremove; pause
+        apt update && apt upgrade --assume-yes && apt autoremove --assume-yes; pause
     fi
 
     whiptail \
@@ -272,7 +276,18 @@ set_pkgs ()
     if [ "$?" -eq 0 ]
     then
         block ":: Install Docker Engine packages"
-        apt install --assume-yes --no-install-recommends docker.io docker-compose; pause
+        apt install --assume-yes --no-install-recommends docker.io; pause
+
+        whiptail \
+            --backtitle "${BACKTITLE}" \
+            --title     "Confirmation [?]" \
+            --yesno     "\nDo you want to install Docker Compose?" 8 60
+
+        if [ "$?" -eq 0 ]
+        then
+            block ":: Install Docker Compose v${COMPOSE_TAG}"
+            curl -L -# -o /usr/local/bin/docker-compose ${COMPOSE_GIT_URL} && chmod 755 /usr/local/bin/docker-compose; pause
+        fi
     fi
 
     whiptail \
@@ -361,13 +376,12 @@ set_user ()
             rm {/root,${USER_HOME}}/{.bash*,.profile} && echo "[OK] Original dotfiles deleted successfully" &>> ${LOGS}
 
             # Create Docker configuration
-            [[ -x "/bin/docker" ]] && sudo -u ${USER_NAME} \
-                curl -O -# --create-dirs --output-dir ${USER_HOME}/.docker "${GITHUB}/.docker/config.json"
+            [[ -x "/bin/docker" ]] && curl -O -# --create-dirs --output-dir .docker "${DOTFILES_GIT_URL}/.docker/config.json"
 
             for dotfile in "${DOTFILES[@]}"
             do
                 # Get dotfiles to Github
-                curl -O -# "${GITHUB}/$dotfile"
+                curl -O -# "${DOTFILES_GIT_URL}/$dotfile"
                 # Set ${USER_NAME}'s dotfiles
                 cp $dotfile ${USER_HOME} && chown ${USER_NAME}:${USER_NAME} ${USER_HOME}/$dotfile
                 # Process seems to be OK
