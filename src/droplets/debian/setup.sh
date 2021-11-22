@@ -469,18 +469,22 @@ set_wall ()
             --separate-output \
             --backtitle "${BACKTITLE}" \
             --title     "Selection [?]" \
-            --checklist "\nChoose which ports to open (IN)" 20 38 11 \
+            --checklist "\nChoose which ports to open (IN)" 24 38 15 \
                 "22"    "SSH"              ON  \
                 "80"    "HTTP"             ON  \
                 "443"   "HTTPS"            ON  \
+                "3000"  "NestJS"           OFF \
                 "3306"  "MySQL"            OFF \
                 "5432"  "PostgreSQL"       OFF \
+                "5672"  "AMQP"             OFF \
                 "8080"  "Adminer"          OFF \
                 "8083"  "MQTT"             OFF \
-                "5672"  "AMQP"             OFF \
+                "9090"  "Prometheus"       OFF \
+                "9091"  "Pushgateway"      OFF \
+                "9092"  "Grafana"          OFF \
                 "8081"  "Redis (Admin)"    OFF \
-                "18083" "EMQX (Admin)"     OFF \
                 "15672" "RabbitMQ (Admin)" OFF \
+                "18083" "EMQX (Admin)"     OFF \
                 2>${OUTPUT}
 
         # 0 means user hit [yes] button
