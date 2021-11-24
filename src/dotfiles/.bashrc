@@ -38,10 +38,12 @@ setPrompt ()
     local yellow='\[\e[0;33m\]'
     local purple='\[\e[0;35m\]'
 
+    # Check Git branch
+    [[ ${GITPROMPT} != 0 ]] && local branch=$(__git_ps1 ":%s")
     # Check Python virtual environments
     [[ ${VIRTUAL_ENV} != "" ]] && PS1+="${cyan}(${VIRTUAL_ENV##*/})${off} "
-    # Finalize PS1 (User, Directory, Prompt symbols: $/#)
-    PS1+="${red}\u@\h${off} ${purple}in${off} ${green}\w${off} ${yellow}\\\$${off} "
+    # Finalize PS1 (User, Directory, Branch, Prompt symbols: $/#)
+    PS1+="${blue}\u${off} ${purple}in${off} ${green}\w${off}${cyan}${branch:-}${off} ${yellow}\\\$${off} "
 }
 
 PROMPT_COMMAND=setPrompt

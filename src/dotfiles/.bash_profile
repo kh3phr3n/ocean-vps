@@ -2,6 +2,7 @@
 export PAGER='less'
 export VISUAL='vim'
 export EDITOR='vim'
+export GITPROMPT='1'
 export HISTCONTROL='erasedups'
 
 # Debian specific
