@@ -96,6 +96,22 @@ url_encode ()
 # File editing functions
 # ----------------------
 
+# /!\ Create mode
+edit_docker_daemon ()
+{
+cat > /etc/docker/daemon.json << EOF
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3",
+    "labels": "production_status",
+    "env": "os,customer"
+  }
+}
+EOF
+}
+
 # /!\ Append mode
 edit_pamd_sshd ()
 {
@@ -277,6 +293,9 @@ set_pkgs ()
     then
         block ":: Install Docker Engine packages"
         apt install --assume-yes --no-install-recommends docker.io; pause
+
+        # Add custom settings
+        edit_docker_daemon && echo "[OK] Service Docker configured successfully" &>> ${LOGS}
 
         whiptail \
             --backtitle "${BACKTITLE}" \
