@@ -184,7 +184,7 @@ ignoreip = ${IP_WHITELIST}
 
 # Alert email
 mta = mail
-action = %(action_mw)s
+action = %(action_)s
 sender = ${SMTP_USER}
 destemail = ${SEND_ALERT_TO}
 
