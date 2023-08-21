@@ -142,6 +142,7 @@ EOF
 edit_totp_sshd_config ()
 {
 cat << EOF >> /etc/ssh/sshd_config
+KbdInteractiveAuthentication yes
 ChallengeResponseAuthentication yes
 
 # 2FA TOTP Users
@@ -431,6 +432,7 @@ set_sshd ()
         cp /etc/ssh/sshd_config /etc/ssh/sshd_config~
 
         # Restrict SSHD server usage
+        # If the line with a specific pattern is commented, ignore it, otherwise delete it
         sed -i "/AddressFamily/{/^#/b;d}" /etc/ssh/sshd_config
         sed -i "/X11Forwarding/{/^#/b;d}" /etc/ssh/sshd_config
         sed -i "/PermitRootLogin/{/^#/b;d}" /etc/ssh/sshd_config
@@ -466,6 +468,7 @@ set_totp ()
 
         # Set up PAM and SSHD
         sed -i "/@include common-auth/s/^/# &/" /etc/pam.d/sshd
+        sed -i "/KbdInteractiveAuthentication/{/^#/b;d}" /etc/ssh/sshd_config
         sed -i "/ChallengeResponseAuthentication/{/^#/b;d}" /etc/ssh/sshd_config
         edit_pamd_sshd && edit_totp_sshd_config && echo "[OK] Service SSH 2FA configured successfully: ${USER_NAME}" &>> ${LOGS}
     fi
