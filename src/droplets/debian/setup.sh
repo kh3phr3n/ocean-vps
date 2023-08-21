@@ -484,7 +484,7 @@ set_wall ()
     if [ "$?" -eq 0 ]
     then
         block ":: Install additionnal packages"
-        apt install --assume-yes --no-install-recommends ufw netcat; pause
+        apt install --assume-yes --no-install-recommends ufw netcat-openbsd; pause
 
         # Backup original configurations
         cp /etc/default/ufw /etc/default/ufw~
