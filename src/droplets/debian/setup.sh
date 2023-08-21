@@ -21,9 +21,8 @@ USER_PASS=""
 USER_HOME="/home/${USER_NAME}"
 USER_GROUPS="sudo,systemd-journal"
 
-# Firewall/Fail2ban settings
+# Fail2ban settings
 IP_WHITELIST="127.0.0.1/8 ::1"
-ALLOW_OUT_PORTS=('53' '80' '443' '465')
 
 # Dialog settings
 LOGS=$(mktemp)
@@ -496,7 +495,7 @@ set_wall ()
         [[ "$?" -eq 0 ]] && echo "[OK] Service UFW configured successfully" &>> ${LOGS}
 
         block ":: Deny all incoming connections"
-        ufw default deny incoming && ufw default deny outgoing; pause
+        ufw default deny incoming && ufw default allow outgoing; pause
 
         whiptail \
             --separate-output \
@@ -531,12 +530,6 @@ set_wall ()
                 ufw allow in $inPort && echo "[OK] IN port allowed successfully: $inPort" &>> ${LOGS}
                 # Restrict usage on port 22
                 [ "$inPort" == "22" ] && ufw limit $inPort
-            done
-
-            for outPort in "${ALLOW_OUT_PORTS[@]}"
-            do
-                # Create new UFW outgoing rule
-                ufw allow out $outPort && echo "[OK] OUT port allowed successfully: $outPort" &>> ${LOGS}
             done
 
             # We can now enable UFW!
