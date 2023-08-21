@@ -475,6 +475,7 @@ set_totp ()
 }
 
 # Configure firewall (UFW)
+# TODO: Look at custom logging rules
 set_wall ()
 {
     whiptail \
