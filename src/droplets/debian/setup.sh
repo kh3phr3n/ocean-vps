@@ -494,12 +494,11 @@ set_wall ()
         cp /etc/ufw/before.rules /etc/ufw/before.rules~
 
         # Disable UFW IPv6 support + ping
-        sed -i "/^IPV6/s/yes/no/" /etc/default/ufw && \
         sed -i "/input -p icmp --icmp-type echo/s/ACCEPT/DROP/" /etc/ufw/before.rules
         [[ "$?" -eq 0 ]] && echo "[OK] Service UFW configured successfully" &>> ${LOGS}
 
         block ":: Deny all incoming connections"
-        ufw default deny incoming && ufw default allow outgoing; pause
+        ufw default deny incoming && ufw default allow outgoing && ufw logging off; pause
 
         whiptail \
             --separate-output \
