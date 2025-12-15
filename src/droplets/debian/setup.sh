@@ -292,7 +292,7 @@ set_pkgs ()
     if [ "$?" -eq 0 ]
     then
         block ":: Install Docker Engine packages"
-        apt install --assume-yes --no-install-recommends docker.io; pause
+        apt install --assume-yes --no-install-recommends docker.io docker-cli; pause
 
         # Add custom settings
         edit_docker_daemon && echo "[OK] Service Docker configured successfully" &>> ${LOGS}
